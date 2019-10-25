@@ -521,6 +521,6 @@ def main(configFile):
    #'''
 if (__name__ == "__main__"):
    commandLineArgs = argparse.ArgumentParser()
-   commandLineArgs.add_argument("--config_path", type = str, default = "\Text Files\config.txt")
+   commandLineArgs.add_argument("--config_path", type = str, default = "config.txt")
    arguments = commandLineArgs.parse_args() 
    main(arguments.config_path)

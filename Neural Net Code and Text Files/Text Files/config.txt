@@ -1,5 +1,0 @@
-\Text Files\traininghyperparams.txt
-\Text Files\layersizes.txt
-\Text Files\inputs.txt
-\Text Files\weights0.txt
-\TextFiles\weights1.txt
