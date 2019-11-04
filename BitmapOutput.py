@@ -220,6 +220,7 @@ class BitmapOutput():
       rgbQuad_rgbReserved = None           # not used in this method
 
       commandLineArgs = argparse.ArgumentParser()
+      commandLineArgs.add_argument("--original_path", type = str, default = "test1.bmp")
       commandLineArgs.add_argument("--input_path", type = str, default = "test1.txt")
       commandLineArgs.add_argument("--output_path", type = str, default = "test2.bmp")
       arguments = commandLineArgs.parse_args() 
@@ -227,12 +228,13 @@ class BitmapOutput():
 
       dibdumper = BitmapOutput() # needed to get to the byte swapping methods
       inFileName = arguments.input_path
-
+      originalFileName = arguments.original_path
       outFileName = arguments.output_path
 
       try: # lots of things can go wrong when doing file i'''o
          # Open the file that is the first command line parameter
          fstream = open(inFileName, 'r')
+         origstream = open(originalFileName, 'rb')
 
          '''*
          *  Read in BITMAPFILEHEADER
@@ -258,11 +260,11 @@ class BitmapOutput():
          *'''
 
          # Read and Convert to big endian
-         dibdumper.bmpFileHeader_bfType      = [int(val) for val in fstream.readline().split()][0]      # WORD
-         dibdumper.bmpFileHeader_bfSize      = [int(val) for val in fstream.readline().split()][0]      # DWORD
-         dibdumper.bmpFileHeader_bfReserved1 = [int(val) for val in fstream.readline().split()][0]      # WORD
-         dibdumper.bmpFileHeader_bfReserved2 = [int(val) for val in fstream.readline().split()][0]      # WORD
-         dibdumper.bmpFileHeader_bfOffBits   = [int(val) for val in fstream.readline().split()][0]      # DWORD
+         dibdumper.bmpFileHeader_bfType      = struct.unpack("<H", origstream.read(2))[0]      # WORD
+         dibdumper.bmpFileHeader_bfSize      = struct.unpack("<i", origstream.read(4))[0]      # DWORD
+         dibdumper.bmpFileHeader_bfReserved1 = struct.unpack("<H", origstream.read(2))[0]      # WORD
+         dibdumper.bmpFileHeader_bfReserved2 = struct.unpack("<H", origstream.read(2))[0]      # WORD
+         dibdumper.bmpFileHeader_bfOffBits   = struct.unpack("<i", origstream.read(4))[0]      # DWORD
 
          print(
             "bfType = " + str(dibdumper.bmpFileHeader_bfType) + "\n" +
@@ -369,18 +371,17 @@ class BitmapOutput():
          *'''
 
          # Read and convert to big endian
-         dibdumper.bmpInfoHeader_biSize           = [int(val) for val in fstream.readline().split()][0]                                   # DWORD
-         dibdumper.bmpInfoHeader_biWidth          = [int(val) for val in fstream.readline().split()][0]                                   # LONG
-         dibdumper.bmpInfoHeader_biHeight         = [int(val) for val in fstream.readline().split()][0]                                   # LONG
-         dibdumper.bmpInfoHeader_biPlanes         = [int(val) for val in fstream.readline().split()][0]                                   # WORD
-         dibdumper.bmpInfoHeader_biBitCount       = [int(val) for val in fstream.readline().split()][0]                                   # WORD
-         dibdumper.bmpInfoHeader_biCompression    = [int(val) for val in fstream.readline().split()][0]                                   # DWORD
-         dibdumper.bmpInfoHeader_biSizeImage      = [int(val) for val in fstream.readline().split()][0]                                   # DWORD
-         dibdumper.bmpInfoHeader_biXPelsPerMeter  = [int(val) for val in fstream.readline().split()][0]                                   # LONG
-         dibdumper.bmpInfoHeader_biYPelsPerMeter  = [int(val) for val in fstream.readline().split()][0]                                   # LONG
-         dibdumper.bmpInfoHeader_biClrUsed        = [int(val) for val in fstream.readline().split()][0]                                   # DWORD
-         dibdumper.bmpInfoHeader_biClrImportant   = [int(val) for val in fstream.readline().split()][0]
-         iDeadBytes = [int(val) for val in fstream.readline().split()][0]                                   # DWORD
+         dibdumper.bmpInfoHeader_biSize           = struct.unpack("<i", origstream.read(4))[0]                                   # DWORD
+         dibdumper.bmpInfoHeader_biWidth          = struct.unpack("<i", origstream.read(4))[0]                                   # LONG
+         dibdumper.bmpInfoHeader_biHeight         = struct.unpack("<i", origstream.read(4))[0]                                   # LONG
+         dibdumper.bmpInfoHeader_biPlanes         = struct.unpack("<H", origstream.read(2))[0]                                   # WORD
+         dibdumper.bmpInfoHeader_biBitCount       = struct.unpack("<H", origstream.read(2))[0]                                   # WORD
+         dibdumper.bmpInfoHeader_biCompression    = struct.unpack("<i", origstream.read(4))[0]                                   # DWORD
+         dibdumper.bmpInfoHeader_biSizeImage      = struct.unpack("<i", origstream.read(4))[0]                                   # DWORD
+         dibdumper.bmpInfoHeader_biXPelsPerMeter  = struct.unpack("<i", origstream.read(4))[0]                                   # LONG
+         dibdumper.bmpInfoHeader_biYPelsPerMeter  = struct.unpack("<i", origstream.read(4))[0]                                   # LONG
+         dibdumper.bmpInfoHeader_biClrUsed        = struct.unpack("<i", origstream.read(4))[0]                                   # DWORD
+         dibdumper.bmpInfoHeader_biClrImportant   = struct.unpack("<i", origstream.read(4))[0]                                   # DWORD
 
          print(
              "biSize = " + str(dibdumper.bmpInfoHeader_biSize) + "\n" +

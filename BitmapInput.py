@@ -487,7 +487,7 @@ class BitmapInput():
             * have bits from part of the remaining byte. Each color is 1 bit which is masked with 0x01.
             * The screen ordering of the pels is High-Bit to Low-Bit, so the most significant element is first in the array of pels.
             *'''
-            iBytesPerRow = dibdumper.bmpInfoHeader_biWidth / 8
+            iBytesPerRow = dibdumper.bmpInfoHeader_biWidth // 8
             iTrailingBits = dibdumper.bmpInfoHeader_biWidth % 8
 
             iDeadBytes = iBytesPerRow
@@ -495,13 +495,13 @@ class BitmapInput():
                iDeadBytes += 1
                
             iDeadBytes = (4 - iDeadBytes % 4) % 4
-            print("working")
+
             for row in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
                if dibdumper.topDownDIB:
                   i = row 
                else:
                   i = dibdumper.bmpInfoHeader_biHeight - 1 - row
-                  
+
                for j in range(iBytesPerRow):
                   iByteVal = struct.unpack(">B", fstream.read(1))[0]
 
@@ -509,7 +509,6 @@ class BitmapInput():
                      iColumn = j * 8 + k
                      pel = colorPallet[(iByteVal >> (7 - k)) & 0x01]
                      dibdumper.imageArray[i][iColumn] = pel
-               
                if iTrailingBits > 0: # pick up the trailing bits for images that are not mod 8 columns wide
                   iByteVal = struct.unpack(">B", fstream.read(1))[0]
 
@@ -517,10 +516,9 @@ class BitmapInput():
                      iColumn = iBytesPerRow * 8 + k
                      pel = colorPallet[(iByteVal >> (7 - k)) & 0x01]
                      dibdumper.imageArray[i][iColumn] = pel
-
                for j in range(iDeadBytes):
                   struct.unpack(">B", fstream.read(1))[0] # Now read in the "dead bytes" to pad to a 4 byte boundary
-            print("working")
+
          elif dibdumper.bmpInfoHeader_biBitCount == 2: # 4 colors, Each byte is 4 pels (2 bits each),  Should work, not tested.
             '''*
             * Each byte read in is 4 columns, so we need to break them out. We also have to deal with the case
@@ -528,7 +526,7 @@ class BitmapInput():
             * have from 2 to 6 bits of the remaining byte. Each color is 2 bits which is masked with 0x03.
             * The screen ordering of the pels is High-Half-Nibble to Low-Half-Nibble, so the most significant element is first in the array of pels.
             *'''
-            iBytesPerRow = dibdumper.bmpInfoHeader_biWidth / 4
+            iBytesPerRow = dibdumper.bmpInfoHeader_biWidth // 4
             iTrailingBits = dibdumper.bmpInfoHeader_biWidth % 4 # 0, 1, 2 or 3
 
             iDeadBytes = iBytesPerRow
@@ -570,8 +568,8 @@ class BitmapInput():
             * The screen ordering of the pels is High-Nibble Low-Nibble, so the most significant element is first in the array of pels.
             *'''
             iPelsPerRow   = dibdumper.bmpInfoHeader_biWidth
-            iBytesPerRow  = dibdumper.iPelsPerRow / 2
-            iTrailingBits = dibdumper.iPelsPerRow % 2  # Will either be 0 or 1
+            iBytesPerRow  = iPelsPerRow // 2
+            iTrailingBits = iPelsPerRow % 2  # Will either be 0 or 1
 
             iDeadBytes = iBytesPerRow
             if iTrailingBits > 0:
@@ -735,24 +733,6 @@ class BitmapInput():
 
          fstream = open(outFileName, 'w')
             # BITMAPFILEHEADER
-         fstream.write(str(dibdumper.bmpFileHeader_bfType) + '\n')      # WORD
-         fstream.write(str(dibdumper.bmpFileHeader_bfSize) + '\n')       # DWORD
-         fstream.write(str(dibdumper.bmpFileHeader_bfReserved1) + '\n') # WORD
-         fstream.write(str(dibdumper.bmpFileHeader_bfReserved2) + '\n') # WORD
-         fstream.write(str(dibdumper.bmpFileHeader_bfOffBits) + '\n')      # DWORD
-         # BITMAPINFOHEADER
-         fstream.write(str(dibdumper.bmpInfoHeader_biSize) + '\n')          # DWORD
-         fstream.write(str(dibdumper.bmpInfoHeader_biWidth) + '\n')         # LONG
-         fstream.write(str(dibdumper.bmpInfoHeader_biHeight) + '\n')        # LONG
-         fstream.write(str(dibdumper.bmpInfoHeader_biPlanes) + '\n')    # WORD
-         fstream.write(str(dibdumper.bmpInfoHeader_biBitCount) + '\n')  # WORD
-         fstream.write(str(dibdumper.bmpInfoHeader_biCompression) + '\n')   # DWORD
-         fstream.write(str(dibdumper.bmpInfoHeader_biSizeImage) + '\n')     # DWORD
-         fstream.write(str(dibdumper.bmpInfoHeader_biXPelsPerMeter) + '\n') # LONG
-         fstream.write(str(dibdumper.bmpInfoHeader_biYPelsPerMeter) + '\n') # LONG
-         fstream.write(str(dibdumper.bmpInfoHeader_biClrUsed) + '\n')     # DWORD
-         fstream.write(str(dibdumper.bmpInfoHeader_biClrImportant) + '\n')  # DWORD
-         fstream.write(str(iDeadBytes) + '\n')
          # there is no color table for this true color image, so write out the pels
 
          for i in range(dibdumper.bmpInfoHeader_biHeight):    # write over the rows (in the usual inverted format)

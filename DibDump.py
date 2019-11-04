@@ -488,7 +488,7 @@ class DibDump():
             * have bits from part of the remaining byte. Each color is 1 bit which is masked with 0x01.
             * The screen ordering of the pels is High-Bit to Low-Bit, so the most significant element is first in the array of pels.
             *'''
-            iBytesPerRow = dibdumper.bmpInfoHeader_biWidth / 8
+            iBytesPerRow = dibdumper.bmpInfoHeader_biWidth // 8
             iTrailingBits = dibdumper.bmpInfoHeader_biWidth % 8
 
             iDeadBytes = iBytesPerRow
@@ -529,7 +529,7 @@ class DibDump():
             * have from 2 to 6 bits of the remaining byte. Each color is 2 bits which is masked with 0x03.
             * The screen ordering of the pels is High-Half-Nibble to Low-Half-Nibble, so the most significant element is first in the array of pels.
             *'''
-            iBytesPerRow = dibdumper.bmpInfoHeader_biWidth / 4
+            iBytesPerRow = dibdumper.bmpInfoHeader_biWidth // 4
             iTrailingBits = dibdumper.bmpInfoHeader_biWidth % 4 # 0, 1, 2 or 3
 
             iDeadBytes = iBytesPerRow
@@ -571,7 +571,7 @@ class DibDump():
             * The screen ordering of the pels is High-Nibble Low-Nibble, so the most significant element is first in the array of pels.
             *'''
             iPelsPerRow   = dibdumper.bmpInfoHeader_biWidth
-            iBytesPerRow  = dibdumper.iPelsPerRow / 2
+            iBytesPerRow  = dibdumper.iPelsPerRow // 2
             iTrailingBits = dibdumper.iPelsPerRow % 2  # Will either be 0 or 1
 
             iDeadBytes = iBytesPerRow
