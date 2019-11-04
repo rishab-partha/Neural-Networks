@@ -147,14 +147,7 @@ class BitmapOutput():
       # identify it as such. Note that when the image is saved, it will be written out in the usual
       # inverted format with a positive bmpInfoHeader_biHeight value.
       self.topDownDIB = False
-   '''*
-   * Methods to go between little and big endian integer formats.
-   *'''
-   def swapInt(self, v):
-      return  (v >> 24) | (v << 24) | ((v << 8) & 0x00FF0000) | ((v >> 8) & 0x0000FF00)
 
-   def swapShort(self, v):
-      return  ((v << 8) & 0xFF00) | ((v >> 8) & 0x00FF)
    '''*
    * Method pelToRGBQ accepts an integer (32 bit) picture element and returns the red, green and blue colors.
    * Unlike pelToRGB, this method also extracts the most significant byte and populates the reserved element of RgbQuad.

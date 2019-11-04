@@ -495,32 +495,32 @@ class BitmapInput():
                iDeadBytes += 1
                
             iDeadBytes = (4 - iDeadBytes % 4) % 4
-
+            print("working")
             for row in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
                if dibdumper.topDownDIB:
                   i = row 
                else:
                   i = dibdumper.bmpInfoHeader_biHeight - 1 - row
                   
-                  for j in range(iBytesPerRow):
-                     iByteVal = struct.unpack(">B", fstream.read(1))[0]
+               for j in range(iBytesPerRow):
+                  iByteVal = struct.unpack(">B", fstream.read(1))[0]
 
-                     for k in range(8):     # Get 8 pels from the one byte
-                        iColumn = j * 8 + k
-                        pel = colorPallet[(iByteVal >> (7 - k)) & 0x01]
-                        dibdumper.imageArray[i][iColumn] = pel
+                  for k in range(8):     # Get 8 pels from the one byte
+                     iColumn = j * 8 + k
+                     pel = colorPallet[(iByteVal >> (7 - k)) & 0x01]
+                     dibdumper.imageArray[i][iColumn] = pel
+               
+               if iTrailingBits > 0: # pick up the trailing bits for images that are not mod 8 columns wide
+                  iByteVal = struct.unpack(">B", fstream.read(1))[0]
 
-                  if iTrailingBits > 0: # pick up the trailing bits for images that are not mod 8 columns wide
-                     iByteVal = struct.unpack(">B", fstream.read(1))[0]
+                  for k in range(iTrailingBits):
+                     iColumn = iBytesPerRow * 8 + k
+                     pel = colorPallet[(iByteVal >> (7 - k)) & 0x01]
+                     dibdumper.imageArray[i][iColumn] = pel
 
-                     for k in range(iTrailingBits):
-                        iColumn = iBytesPerRow * 8 + k
-                        pel = colorPallet[(iByteVal >> (7 - k)) & 0x01]
-                        dibdumper.imageArray[i][iColumn] = pel
-
-                  for j in range(iDeadBytes):
-                     struct.unpack(">B", fstream.read(1))[0] # Now read in the "dead bytes" to pad to a 4 byte boundary
-
+               for j in range(iDeadBytes):
+                  struct.unpack(">B", fstream.read(1))[0] # Now read in the "dead bytes" to pad to a 4 byte boundary
+            print("working")
          elif dibdumper.bmpInfoHeader_biBitCount == 2: # 4 colors, Each byte is 4 pels (2 bits each),  Should work, not tested.
             '''*
             * Each byte read in is 4 columns, so we need to break them out. We also have to deal with the case
