@@ -91,7 +91,6 @@ class NeuralNet:
       self.weights = np.zeros((len(layerSizes) - 1, maximumLayerSize, maximumLayerSize))
       self.deltaWeights = np.zeros(self.weights.shape)
       self.errors = np.full_like(np.arange(self.inputs.shape[0]), 2.0, dtype = np.double)
-      self.setWeights()
       # End of function __init__
 
    '''# Function setWeights currently functions to hard code the weights to certain values that
@@ -205,7 +204,7 @@ class NeuralNet:
       #print("Debug: ", end = "")
       for n in range(1, len(self.layerSizes)):
          for j in range(self.layerSizes[n]):
-            self.activations[n][j] = 0
+            self.activations[n][j] = 0.0
             #print("a[" + str(n) + "][" + str(j) + "] = f(", end = "")
             for k in range(self.layerSizes[n - 1]):
                self.activations[n][j] += self.activations[n - 1][k]*self.weights[n - 1][k][j]
@@ -242,7 +241,7 @@ class NeuralNet:
       # @param inputIndex the index of the input to calculate error for
       #'''
    def calculateError(self, inputIndex):
-      error = 0
+      error = 0.0
       for i in range(self.outputs.shape[1]):
          whatToSquare = self.outputs[inputIndex][i] - self.expectedOutputs[inputIndex][i]
          error += 0.5*(whatToSquare*whatToSquare)
@@ -288,7 +287,7 @@ class NeuralNet:
       # @param self       the multilayer perceptron where the errors are calculated
       #'''
    def calculateTotalError(self):
-      totalerror = 0
+      totalerror = 0.0
 
       for i in range(len(self.inputs)):
          totalerror += self.errors[i]*self.errors[i]
