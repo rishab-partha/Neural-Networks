@@ -217,16 +217,20 @@ class NeuralNet:
       self.assignInput(inputIndex)
       #print("Debug: ", end = "") #DEBUG
       for n in range(1, len(self.layerSizes)):
+         print("work")
          for j in range(self.layerSizes[n]):
             self.activations[n][j] = 0.0
             #print("a[" + str(n) + "][" + str(j) + "] = f(", end = "") #DEBUG
             for k in range(self.layerSizes[n - 1]):
                self.activations[n][j] += self.activations[n - 1][k]*self.weights[n - 1][k][j]
+               print(self.weights[n - 1][k][j])
+               print(self.activations[n][j])
                #print("a[" + str(n - 1) + "][" + str(k) + "]w[" + str(n - 1) +  #DEBUG
                #  "][" + str(k) + "][" + str(j) + "] +", end = "")s
                #End of for loop that performs dot product
             #print(")")
             self.activations[n][j] = self.wrapperFunc(self.activations[n][j])
+            print(self.activations[n][j])
             #End of for loop for wrapper functions and propagating all edges
 
       for i in range(self.layerSizes[len(self.layerSizes) - 1]):
@@ -347,8 +351,11 @@ class NeuralNet:
       #'''
    def optimizeOneInput(self, inputIndex):
       self.runOneInput(inputIndex)
+      print("work")
       self.errors[inputIndex] = self.calculateError(inputIndex)
       self.calculateDeltas(inputIndex)
+      print("work")
+      print(self.weights)
       #print("Deltas:")  #DEBUG
       #print(self.deltaWeights)
       curerror = self.errors[inputIndex]
@@ -361,8 +368,10 @@ class NeuralNet:
       
       #print("Weights 1.5:") #DEBUG
       #print(self.weights)
+      print("work")
       self.runOneInput(inputIndex)
       self.errors[inputIndex] = self.calculateError(inputIndex)
+      print("work")
       newerror = self.errors[inputIndex]
       #print(newerror) #DEBUG
 
@@ -409,6 +418,7 @@ class NeuralNet:
 
          #DEBUG: print("Weights 2:") #DEBUG
          #print(self.weights)
+      print("work")
       self.runOneBatchWithoutPrint()
       self.calculateAllErrors()
       self.calculateTotalError()
@@ -434,8 +444,10 @@ class NeuralNet:
       willContinue = True
       numIters = 0
       curTotError = self.totalError
+      print(self.learningFactor)
       while numIters < self.maximumIters and willContinue:
          willContinue = self.trainOneBatch()
+         print("work")
          numIters += 1
 
          if numIters % self.numPrint == 0:
@@ -488,6 +500,9 @@ def main(configFile):
 
    numLayers = [int(val) for val in fileLayerSizes.readline().split()][0]
    numInputs = [int(val) for val in fileInputs.readline().split()][0]    #Find the number of layers and inputs
+
+   inputFile = None
+   outputFile = None
 
    layerSizes = np.zeros((numLayers), np.int32)  #Create the layersizes array
 
