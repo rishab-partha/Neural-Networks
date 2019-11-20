@@ -9,15 +9,10 @@ for n = 2 to numlayers
 next n
 
 for i = 1 to size_(numlayers)
-   omega_(numlayers, i) = T_i - a_(numlayers, i)
-   phi_(numlayers, i) = omega_(numlayers, i)*f'(theta_(numlayers, i))
-
-   for j = 1 to size_(numlayers - 1)
-      deltaw_(numlayers-1),j,i = lambda*a_(numlayers-1, j)*phi_(numlayers, i)
-   next j
+   omega_i = T_i - F_i
 next i
 
-for n = numlayers - 2 to 1
+for n = numlayers - 1 to 1
    for k = 1 to size_(n + 1)
       for J = 1 to size(n + 2)
          omega_(n + 1, k) += phi_(n + 2, J)*w_(n + 1, k, J)
