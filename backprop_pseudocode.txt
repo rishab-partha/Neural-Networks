@@ -2,7 +2,7 @@
 for n = 2 to numlayers
    for j = 1 to size_n
       for k = 1 to size_(n - 1)
-         theta_n,j += a_(n - 1),k * w_(n - 1),k,j
+         theta_n,j += a_((n - 1),k) * w_((n - 1),k,j)
       next k
    a_i,j = f(theta_n,j)
    next j
@@ -13,18 +13,22 @@ for i = 1 to size_(numlayers)
 next i
 
 for n = numlayers - 1 to 1
-   for k = 1 to size_(n + 1)
-      for J = 1 to size(n + 2)
-         omega_(n + 1, k) += phi_(n + 2, J)*w_(n + 1, k, J)
-      next J
 
-      phi_(n + 1, k) = omega(n + 1, k)*f'(theta_(n + 1, k))
+   for j = 1 to size_(n + 1)
+      psi_j = omega_j * f'(theta_((n + 1), j))
 
-      for m = 1 to size_(n)
-         deltaw_(n, m, k) = lambda*a_(n, m)*phi_(n + 1, k)
-      next m
+      for k = 1 to size_n
+         deltaw_(n, k, j) = lambda*a_(n, k)*psi_j
+      next k
+   next j
+
+   for k = 1 to size_n
+      omega_k = 0
+
+      for j = 1 to size_(n + 1)
+         omega_k += psi_j * weights_(n, k, j)
+         weights_(n, k, j) += deltaw_(n, k, j)
+
+      next j
    next k
-
-   for k = 1 to size(n + 1)
-      for j = 1 to size(n + 2)
-         weights_(n + 1, k, j) += deltaw_(n + 1, k, j)
+next n
