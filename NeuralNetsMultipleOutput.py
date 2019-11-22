@@ -511,6 +511,19 @@ def main(configFile):
 
    for i in range(numInputs):
       ithInputFile = [int(val) for val in fileInputs.readline().split(", ")]         #Parses ith input
+
+      for j in range(layerSizes[0]):
+         inputs[i][j] = ithInputFile[j]
+         #End of assigning inputs
+         
+      ithOutputFile = [int(val) for val in fileInputs.readline().split(", ")]
+      for j in range(layerSizes[len(layerSizes) - 1]):
+         expectedOutputs[i][j] = ithOutputFile[j]
+         #End of assigning expected outputs
+
+
+   '''for i in range(numInputs):
+      ithInputFile = [int(val) for val in fileInputs.readline().split(", ")]         #Parses ith input
       print(ithInputFile)
       for j in range(layerSizes[0]):
          inputs[i][j] = ithInputFile[j]
@@ -520,7 +533,7 @@ def main(configFile):
       print(ithOutputFile)
       for j in range(layerSizes[len(layerSizes) - 1]):
          expectedOutputs[i][j] = ithOutputFile[j]
-         #End of assigning expected outputs
+         #End of assigning expected outputs'''
 
 
    nn = NeuralNet(layerSizes, inputs, expectedOutputs, maximumIters, learningFactor, errorThreshold,
