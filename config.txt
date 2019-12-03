@@ -3,3 +3,4 @@ layersizes.txt
 inputs.txt
 weights0.txt
 weights1.txt
+outputs
