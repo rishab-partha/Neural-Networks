@@ -336,7 +336,24 @@ class NeuralNet:
    def optimizeOneInput(self, inputIndex):
       self.runOneInput(inputIndex)
       self.errors[inputIndex] = self.calculateError(inputIndex)
-      self.calculateDeltas(inputIndex)
+
+      for i in range(self.layerSizes[len(self.layerSizes) - 1]):
+         self.omegas[0][i] = (self.expectedOutputs[inputIndex][i] - self.outputs[inputIndex][i])
+      
+      for n in range(len(self.layerSizes) - 2, -1, -1):
+
+         for j in range(self.layerSizes[n + 1]):
+            self.psis[j] = self.omegas[0][j]*self.calculateDerivs(self.thetas[n + 1][j])
+
+            for k in range(self.layerSizes[n]):
+               self.omegas[1][k] += self.psis[j]*self.weights[n][k][j]
+               self.deltaWeights[n][k][j] = self.learningFactor*self.activations[n][k]*self.psis[j]
+               self.weights[n][k][j] += self.deltaWeights[n][k][j]
+         
+         self.omegas[0] = self.omegas[1].copy()
+         self.omegas[1] = np.zeros(len(self.omegas[0]))
+
+
       #print("Deltas:")  #DEBUG
       #print(self.deltaWeights)
       curerror = self.errors[inputIndex]
