@@ -63,7 +63,7 @@ class NeuralNet:
       # @postcondition The constructor does not print an error message
       #'''
    def __init__(self, layerSizes, inputs, expectedOutputs, maximumIters, learningFactor, errorThreshold,
-                     learningFactorAdjustment, minErrorGap, lambdaMax, lambdaEps, numPrint, randomRange, inputRange,
+                     learningFactorAdjustment, minErrorGap, lambdaMax, lambdaEps, numPrint, randomRange, inputRange, outputRange,
                       rWeights, wWeights, wOutputs):
 
       self.activations = None
@@ -82,9 +82,17 @@ class NeuralNet:
       self.wWeights = wWeights
       self.randomRange = randomRange
       self.inputRange = inputRange
+      self.outputRange = outputRange
       self.totalError = 500.
       self.outputs = np.zeros(expectedOutputs.shape)
       self.wOutputs = wOutputs
+
+      self.inputs /= inputRange
+      self.expectedOutputs /= outputRange
+
+      print(self.inputs)
+      print(self.expectedOutputs)
+
       maximumLayerSize = 0
 
       for layerSize in layerSizes:
@@ -122,7 +130,8 @@ class NeuralNet:
       #'''
    def randomizeWeights(self):
       for n in range(len(self.layerSizes) - 1):
-         self.weights[n] = self.randomRange[n]*np.random.random_sample(self.weights[n].shape)
+         randRange = self.randomRange[n][1] - self.randomRange[n][0]
+         self.weights[n] = randRange*np.random.random_sample(self.weights[n].shape) + self.randomRange[n][0]
       #End of function randomizeWeights
 
    '''# Function printNet prints out the given state of the multilayer perceptron after processing
@@ -152,9 +161,11 @@ class NeuralNet:
       #End of function printNet
    
    def printOutputs(self, inputIndex):
-      outputFile = open(self.wOutputs, "output" + str(inputIndex) + ".txt"), 'w')
+      if not os.path.exists(self.wOutputs):
+         os.mkdir(self.wOutputs)
+      outputFile = open(os.path.join(self.wOutputs, "output" + str(inputIndex) + ".txt"), 'w')
       for i in range(self.layerSizes[len(self.layerSizes) - 1]):
-         outputFile.write(str(activations[len(self.layerSizes) - 1]) + '\n')
+         outputFile.write(str(int(self.activations[len(self.layerSizes) - 1][i] * self.outputRange)) + '\n')
 
    '''# Function printErrors prints the error for every single test case and also prints
       # out the total error over all testcases.
@@ -365,14 +376,18 @@ class NeuralNet:
 
       #print("Deltas:")  #DEBUG
       #print(self.deltaWeights)
+
       curerror = self.errors[inputIndex]
+
       #print(curerror) #DEBUG
 
       #print("Weights 1.5:") #DEBUG
       #print(self.weights)
+
       self.runOneInput(inputIndex)
       self.errors[inputIndex] = self.calculateError(inputIndex)
       newerror = self.errors[inputIndex]
+
       #print(newerror) #DEBUG
 
       ret = True   #return value that indicates whether the training will continue
@@ -504,7 +519,7 @@ def main(configFile):
    outputFile = None
 
    layerSizes = np.zeros((numLayers), np.int32)  #Create the layersizes array
-   randomRange = np.zeros((numLayers - 1))
+   randomRange = np.zeros((numLayers - 1, 2))
    for i in range(numLayers):
       layerSizes[i] = [int(val) for val in fileLayerSizes.readline().split()][0]
       #End of assigning layersizes
@@ -518,9 +533,12 @@ def main(configFile):
    lambdaEps = [float(val) for val in filehyperParams.readline().split()][0]
    numPrint = [int(val) for val in filehyperParams.readline().split()][0]
    randomRangeFile = open([str(val) for val in filehyperParams.readline().split()][0], 'r')
+
    for i in range(numLayers - 1):
-      randomRange[i] = [float(val) for val in randomRangeFile.readline().split()][0]
-   inputRange =  [float(val) for val in filehyperParams.readline().split()][0]       #End of reading hyperparameters
+      randomRange[i] = [float(val) for val in randomRangeFile.readline().split(', ')]
+
+   inputRange =  [float(val) for val in filehyperParams.readline().split()][0]       
+   outputRange = [float(val) for val in filehyperParams.readline().split()][0] #End of reading hyperparameters
 
    inputs = np.zeros((numInputs, layerSizes[0]))                            #Create the inputs array
    expectedOutputs = np.zeros((numInputs, layerSizes[len(layerSizes) - 1])) #Create expected outputs array
@@ -533,13 +551,13 @@ def main(configFile):
          #End of assigning inputs
          
       ithOutputFile = open([str(val) for val in fileInputs.readline().split()][0])
-      for j in range(layerSizes[0]):
+      for j in range(layerSizes[len(layerSizes) - 1]):
          expectedOutputs[i][j] = [float(val) for val in ithOutputFile.readline().split()][0]
          #End of assigning expected outputs
 
 
    nn = NeuralNet(layerSizes, inputs, expectedOutputs, maximumIters, learningFactor, errorThreshold,
-                  learningFactorAdjustment, minErrorGap, lambdaMax, lambdaEps, numPrint, randomRange, inputRange,
+                  learningFactorAdjustment, minErrorGap, lambdaMax, lambdaEps, numPrint, randomRange, inputRange, outputRange,
                   readWeights, writeWeights, writeOutputs)
 
    nn.randomizeWeights()
