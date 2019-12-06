@@ -1,22 +1,24 @@
 '''# @author Rishab Parthasarathy
    # @version 10.2.19
    # This file defines a multilayer perceptron. In this state, the
-   # neural network defined in this file only supports
-   # one hidden layer. However, this neural network
-   # can be configured in the future to function with any
-   # number of hidden layers. At this point, the neural network
+   # neural network defined in this file supports
+   # any number of hidden layers. At this point, the neural network
    # takes in inputs and weights, and uses the full
    # connectivity pattern and sigmoids at each
    # activation node to calculate the activations at the node.
    # By passing this data through the neural network,
    # the neural network makes a predicted output. In addition,
    # the neural network can be trained to fit a set of inputs to 
-   # expected outputs using gradient descent, which uses the partial derivatives
-   # of error with respect to the weights to adjust the weights themselves.
+   # expected outputs using backpropagation, which uses the partial derivatives
+   # of error and intermediate calculations to train all the edges and
+   # produce outputs more optimal relative to the expected outputs.
    #
    # This file also tests the neural network by passing
    # in inputs and outputs and printing out the internals of
-   # the perceptron to test its efficacy against known results. 
+   # the perceptron to test its efficacy against known results. In addition,
+   # the perceptron offers functionality to write to a file in order to extract
+   # the information and turn the output values into a bitmap that can be visually
+   # interpreted.
    #'''
 import numpy as np
 import math
@@ -50,17 +52,14 @@ class NeuralNet:
       # which apart from the learning factor are the minimum error threshold, learning
       # factor adjustment rate, minimum change in error, maximum learning factor, minimum 
       # learning factor, number of iterations between prints, range of randomization for weights,
-      # and files to read and write weights. Currently, the perceptron can only be built 
-      # to have three activation layers, so if any other number is indicated,
-      # the program quits.
+      # range of adjustment for inputs and outputs, files to write the outputs
+      # and files to read and write weights.
       #
       # @param self            The neural network being created
       # @param layerSizes      The sizes of each activation layer
       # @param inputs          The inputs that the network will evaluate
       # @param expectedOutputs The expected outputs for the network
       #
-      # @precondition  The network has 3 activation layers
-      # @postcondition The constructor does not print an error message
       #'''
    def __init__(self, layerSizes, inputs, expectedOutputs, maximumIters, learningFactor, errorThreshold,
                      learningFactorAdjustment, minErrorGap, lambdaMax, lambdaEps, numPrint, randomRange, inputRange, outputRange,
@@ -89,9 +88,6 @@ class NeuralNet:
 
       self.inputs /= inputRange
       self.expectedOutputs /= outputRange
-
-      print(self.inputs)
-      print(self.expectedOutputs)
 
       maximumLayerSize = 0
 
@@ -124,7 +120,8 @@ class NeuralNet:
                self.weights[n][k][j] = [float(val) for val in fileWeights.readline().split()][0]
       #End of function setWeights
 
-   '''# Function randomizeWeights sets all the weights in the neural network to arbitrary values.
+   '''# Function randomizeWeights sets all the weights in the neural network to arbitrary values
+      # in a certain range.
       #
       # @param self the multilayer perceptron which needs random weights for training
       #'''
@@ -211,7 +208,9 @@ class NeuralNet:
       # the function iterates through all the other activations layer by layer to
       # calculate their values by propagating from previous layers. Finally, after
       # the values in the last layer have been calculated, they are transferred to
-      # the official outputs array.
+      # the official outputs array. In addition, the function runOneInput saves the 
+      # thetas, or dot products for each node. This is because these thetas become
+      # integral in the backpropagation algorithm.
       #
       # @param self       the multilayer perceptron where the input is run
       # @param inputIndex the index of the input for the network to evaluate
@@ -227,13 +226,19 @@ class NeuralNet:
       for n in range(1, len(self.layerSizes)):
          for j in range(self.layerSizes[n]):
             self.thetas[n][j] = 0.0
+
             #print("a[" + str(n) + "][" + str(j) + "] = f(", end = "") #DEBUG
+
             for k in range(self.layerSizes[n - 1]):
                self.thetas[n][j] += self.activations[n - 1][k]*self.weights[n - 1][k][j]
+
                #print("a[" + str(n - 1) + "][" + str(k) + "]w[" + str(n - 1) +  #DEBUG
-               #  "][" + str(k) + "][" + str(j) + "] +", end = "")s
+               #  "][" + str(k) + "][" + str(j) + "] +", end = "")
+
                #End of for loop that performs dot product
+            
             #print(")")
+
             self.activations[n][j] = self.wrapperFunc(self.thetas[n][j])
             #End of for loop for wrapper functions and propagating all edges
 
@@ -290,33 +295,6 @@ class NeuralNet:
    def calculateDerivs(self, inputVal):
       x = self.wrapperFunc(inputVal)
       return x*(1.0 - x)
-   '''# Calculates the changes of weights at a certain input index
-      # by taking partial derivatives of the error function.
-      #
-      # @param self the multilayer perceptron where the deltas are calculated
-      # @param inputIndex the index of the input for adjustment of weights
-      #'''
-   def calculateDeltas(self, inputIndex):
-      difference = None
-      outputDeriv = None
-      for i in range(self.layerSizes[len(self.layerSizes) - 1]):
-         self.omegas[0][i] = (self.expectedOutputs[inputIndex][i] - self.outputs[inputIndex][i])
-      
-      for n in range(len(self.layerSizes) - 2, -1, -1):
-
-         for j in range(self.layerSizes[n + 1]):
-            self.psis[j] = self.omegas[0][j]*self.calculateDerivs(self.thetas[n + 1][j])
-
-            for k in range(self.layerSizes[n]):
-               self.omegas[1][k] += self.psis[j]*self.weights[n][k][j]
-               self.deltaWeights[n][k][j] = self.learningFactor*self.activations[n][k]*self.psis[j]
-               self.weights[n][k][j] += self.deltaWeights[n][k][j]
-         
-         self.omegas[0] = self.omegas[1].copy()
-         self.omegas[1] = np.zeros(len(self.omegas[0]))
-
-
-      #End of function calculateDeltas
 
    '''# Calculates all the errors by iterating through all
       # the inputs and calculating all the errors.
@@ -344,7 +322,8 @@ class NeuralNet:
       #End of function calculateTotalError
 
    '''# Optimizes one error by calculating the deltas for one input and applies the delta
-      # and modifies learning factor and moves downhill through steepest descent. If the
+      # and modifies learning factor and moves downhill through steepest descent. These deltas are calculated
+      # dynamically using the backpropagation algorithm, and the weights themselves are dynamically updated. If the
       # steepest descent goes downhill, learning factor is augmented, but if the steepest descent stagnates,
       # learning factor is not augmented. Also, if steepest descent goes uphill, learning factor is decreased
       # and the weight changes are reversed. Finally, if learning factor becomes zero, training terminates and
@@ -414,7 +393,7 @@ class NeuralNet:
       #End of function optimizeOneInput
 
    '''# Trains one batch by iterating through all inputs and 
-      # optimizing the inputs individually by using gradient descent.
+      # optimizing the inputs individually by using gradient descent with backpropagation.
       # Also, this function runs one batch at the end to find the new total error, and
       # if the total error has converged under a respectable threshold, it terminates
       # training and prints out the reasoning.
@@ -445,7 +424,7 @@ class NeuralNet:
       return ret
       #End of function trainOneBatch
       
-   '''# Trains a multilayer perceptron from scratch by using gradient descent. Every
+   '''# Trains a multilayer perceptron from scratch by using gradient descent with backpropagation. Every
       # certain amount of iterations, the training prints out learning factor and total error.
       # At the same time, the training checks if the error has decreased enough, and if not,
       # it terminates the training. At the end of the training iterations, it prints out the 
