@@ -1,5 +1,5 @@
 '''# @author Rishab Parthasarathy
-   # @version 10.2.19
+   # @version 11.24.19
    # This file defines a multilayer perceptron. In this state, the
    # neural network defined in this file supports
    # any number of hidden layers. At this point, the neural network
