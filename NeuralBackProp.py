@@ -127,9 +127,22 @@ class NeuralNet:
       #'''
    def randomizeWeights(self):
       for n in range(len(self.layerSizes) - 1):
-         randRange = self.randomRange[n][1] - self.randomRange[n][0]
-         self.weights[n] = randRange*np.random.random_sample(self.weights[n].shape) + self.randomRange[n][0]
+         self.weights[n] = self.random(self.randomRange[n][0], self.randomRange[n][1], self.weights[n].shape)
       #End of function randomizeWeights
+   
+   '''# Function random returns an array of given shape such that each value is randomly generated
+      # in a given range.
+      # 
+      # @param self    the multilayer perceptron which is performing the randomization
+      # @param lower   the lower bound of randomization
+      # @param greater the upper bound of randomization
+      # @param shape   the shape of the ranodm array to be created
+      #
+      #'''
+   def random(self, lower, greater, shape):
+      randRange = greater - lower
+      return randRange*np.random.random_sample(shape) + lower
+      #End of function random
 
    '''# Function printNet prints out the given state of the multilayer perceptron after processing
       # a certain input. First, the function prints out the input number. Then, it prints out the
