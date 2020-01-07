@@ -114,7 +114,7 @@ import struct
  *'''
 @final
 class RgbQuad(object):
-   def __init__():
+   def __init__(self):
       self.red = None
       self.green = None
       self.blue = None
@@ -205,8 +205,8 @@ class BitmapInput():
    def colorToGrayscale(self, pel):
       rgb = self.pelToRGB(pel)
       lum = round(0.3 * float(rgb.red) + 0.589 * float(rgb.green) + 0.11 * float(rgb.blue))
-
-      return rgbToPel(lum, lum, lum)
+      lum = 256 - lum
+      return self.rgbToPel(lum, lum, lum)
    '''*
    *
    * ---- MAIN ----
