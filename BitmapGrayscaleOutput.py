@@ -28,9 +28,9 @@
  * Rev: 2/19/09 - The color table was not correctly read when biClrUsed was non-zero. Added one line (and comments) just prior to reading the color table
  *                   to account for this field being non-zero.
  * Rev: 2/20/09 - Added RgbQuad class
- *                Added pelToRGB(), rgbToPel() and colorToGrayscale() to BitmapInput class. These use the new RgbQuad class.
+ *                Added pelToRGB(), rgbToPel() and colorToGrayscale() to DibDump class. These use the new RgbQuad class.
  *                Added peltoRGBQ(), rgbqToPel() (these handle the reserved byte in 32-bit images)
- *                Did NOT implement pelToRGB and rgbToPel in BitmapInput overall.
+ *                Did NOT implement pelToRGB and rgbToPel in DibDump overall.
  * Rev: 2/21/09   The array index values for passing arguments in main() were 1 and 2, should have been 0 and 1 (at least according to Conrad). Not tested.
  * Rev: 11/12/14  Added the topDownDIB flag to deal with negative biHeight values which means image is stored rightside up. All loops depending on the
  *                biHeight value were modified to accommodate both inverted (normal) and top down images. The image is stored in the normal manner
@@ -39,7 +39,7 @@
  *
  * Classes in the file:
  *  RgbQuad
- *  BitmapInput
+ *  DibDump
  *  
  * Methods in this file:
  *  int     swapInt(int v)
@@ -114,12 +114,13 @@ import struct
  *'''
 @final
 class RgbQuad(object):
-   def __init__(self):
+   def __init__():
       self.red = None
       self.green = None
       self.blue = None
       self.reserved = None
-class BitmapInput():
+
+class BitmapOutput():
    def __init__(self):
       #  BITMAPFILEHEADER  
       self.bmpFileHeader_bfType = None         # WORD
@@ -146,14 +147,7 @@ class BitmapInput():
       # identify it as such. Note that when the image is saved, it will be written out in the usual
       # inverted format with a positive bmpInfoHeader_biHeight value.
       self.topDownDIB = False
-   '''*
-   * Methods to go between little and big endian integer formats.
-   *'''
-   def swapInt(self, v):
-      return  (v >> 24) | (v << 24) | ((v << 8) & 0x00FF0000) | ((v >> 8) & 0x0000FF00)
 
-   def swapShort(self, v):
-      return  ((v << 8) & 0xFF00) | ((v >> 8) & 0x00FF)
    '''*
    * Method pelToRGBQ accepts an integer (32 bit) picture element and returns the red, green and blue colors.
    * Unlike pelToRGB, this method also extracts the most significant byte and populates the reserved element of RgbQuad.
@@ -205,8 +199,8 @@ class BitmapInput():
    def colorToGrayscale(self, pel):
       rgb = self.pelToRGB(pel)
       lum = round(0.3 * float(rgb.red) + 0.589 * float(rgb.green) + 0.11 * float(rgb.blue))
-      lum = 256 - lum
-      return lum - 1
+
+      return rgbToPel(lum, lum, lum)
    '''*
    *
    * ---- MAIN ----
@@ -226,20 +220,21 @@ class BitmapInput():
       rgbQuad_rgbReserved = None           # not used in this method
 
       commandLineArgs = argparse.ArgumentParser()
-      commandLineArgs.add_argument("--input_path", type = str, default = "test1.bmp")
-      commandLineArgs.add_argument("--output_path", type = str, default = "test1.txt")
+      commandLineArgs.add_argument("--original_path", type = str, default = "test1.bmp")
+      commandLineArgs.add_argument("--input_path", type = str, default = "test1.txt")
+      commandLineArgs.add_argument("--output_path", type = str, default = "test2.bmp")
       arguments = commandLineArgs.parse_args() 
       # The color table
-      colorPallet = np.zeros(256, np.int32)  # reserve space for the largest possible color table
 
-      dibdumper = BitmapInput() # needed to get to the byte swapping methods
+      dibdumper = BitmapOutput() # needed to get to the byte swapping methods
       inFileName = arguments.input_path
-
+      originalFileName = arguments.original_path
       outFileName = arguments.output_path
 
       try: # lots of things can go wrong when doing file i'''o
          # Open the file that is the first command line parameter
-         fstream = open(inFileName, 'rb')
+         fstream = open(inFileName, 'r')
+         origstream = open(originalFileName, 'rb')
 
          '''*
          *  Read in BITMAPFILEHEADER
@@ -265,11 +260,11 @@ class BitmapInput():
          *'''
 
          # Read and Convert to big endian
-         dibdumper.bmpFileHeader_bfType      = struct.unpack("<H", fstream.read(2))[0]      # WORD
-         dibdumper.bmpFileHeader_bfSize      = struct.unpack("<i", fstream.read(4))[0]      # DWORD
-         dibdumper.bmpFileHeader_bfReserved1 = struct.unpack("<H", fstream.read(2))[0]      # WORD
-         dibdumper.bmpFileHeader_bfReserved2 = struct.unpack("<H", fstream.read(2))[0]      # WORD
-         dibdumper.bmpFileHeader_bfOffBits   = struct.unpack("<i", fstream.read(4))[0]      # DWORD
+         dibdumper.bmpFileHeader_bfType      = struct.unpack("<H", origstream.read(2))[0]      # WORD
+         dibdumper.bmpFileHeader_bfSize      = struct.unpack("<i", origstream.read(4))[0]      # DWORD
+         dibdumper.bmpFileHeader_bfReserved1 = struct.unpack("<H", origstream.read(2))[0]      # WORD
+         dibdumper.bmpFileHeader_bfReserved2 = struct.unpack("<H", origstream.read(2))[0]      # WORD
+         dibdumper.bmpFileHeader_bfOffBits   = struct.unpack("<i", origstream.read(4))[0]      # DWORD
 
          print(
             "bfType = " + str(dibdumper.bmpFileHeader_bfType) + "\n" +
@@ -376,17 +371,17 @@ class BitmapInput():
          *'''
 
          # Read and convert to big endian
-         dibdumper.bmpInfoHeader_biSize           = struct.unpack("<i", fstream.read(4))[0]                                   # DWORD
-         dibdumper.bmpInfoHeader_biWidth          = struct.unpack("<i", fstream.read(4))[0]                                   # LONG
-         dibdumper.bmpInfoHeader_biHeight         = struct.unpack("<i", fstream.read(4))[0]                                   # LONG
-         dibdumper.bmpInfoHeader_biPlanes         = struct.unpack("<H", fstream.read(2))[0]                                   # WORD
-         dibdumper.bmpInfoHeader_biBitCount       = struct.unpack("<H", fstream.read(2))[0]                                   # WORD
-         dibdumper.bmpInfoHeader_biCompression    = struct.unpack("<i", fstream.read(4))[0]                                   # DWORD
-         dibdumper.bmpInfoHeader_biSizeImage      = struct.unpack("<i", fstream.read(4))[0]                                   # DWORD
-         dibdumper.bmpInfoHeader_biXPelsPerMeter  = struct.unpack("<i", fstream.read(4))[0]                                   # LONG
-         dibdumper.bmpInfoHeader_biYPelsPerMeter  = struct.unpack("<i", fstream.read(4))[0]                                   # LONG
-         dibdumper.bmpInfoHeader_biClrUsed        = struct.unpack("<i", fstream.read(4))[0]                                   # DWORD
-         dibdumper.bmpInfoHeader_biClrImportant   = struct.unpack("<i", fstream.read(4))[0]                                   # DWORD
+         dibdumper.bmpInfoHeader_biSize           = struct.unpack("<i", origstream.read(4))[0]                                   # DWORD
+         dibdumper.bmpInfoHeader_biWidth          = struct.unpack("<i", origstream.read(4))[0]                                   # LONG
+         dibdumper.bmpInfoHeader_biHeight         = struct.unpack("<i", origstream.read(4))[0]                                   # LONG
+         dibdumper.bmpInfoHeader_biPlanes         = struct.unpack("<H", origstream.read(2))[0]                                   # WORD
+         dibdumper.bmpInfoHeader_biBitCount       = struct.unpack("<H", origstream.read(2))[0]                                   # WORD
+         dibdumper.bmpInfoHeader_biCompression    = struct.unpack("<i", origstream.read(4))[0]                                   # DWORD
+         dibdumper.bmpInfoHeader_biSizeImage      = struct.unpack("<i", origstream.read(4))[0]                                   # DWORD
+         dibdumper.bmpInfoHeader_biXPelsPerMeter  = struct.unpack("<i", origstream.read(4))[0]                                   # LONG
+         dibdumper.bmpInfoHeader_biYPelsPerMeter  = struct.unpack("<i", origstream.read(4))[0]                                   # LONG
+         dibdumper.bmpInfoHeader_biClrUsed        = struct.unpack("<i", origstream.read(4))[0]                                   # DWORD
+         dibdumper.bmpInfoHeader_biClrImportant   = struct.unpack("<i", origstream.read(4))[0]                                   # DWORD
 
          print(
              "biSize = " + str(dibdumper.bmpInfoHeader_biSize) + "\n" +
@@ -405,9 +400,7 @@ class BitmapInput():
          # Since we use the height to crate arrays, it cannot have a negative a value. If the height field is
          # less than zero, then make it positive and set the topDownDIB flag to TRUE so we know that the image is
          # stored on disc upsidedown (which means it is actually rightside up).
-         if dibdumper.bmpInfoHeader_biHeight < 0:
-            dibdumper.topDownDIB = True
-            dibdumper.bmpInfoHeader_biHeight = -dibdumper.bmpInfoHeader_biHeight
+
          '''*
          Now for the color table. For true color images, there isn't one.
 
@@ -420,20 +413,7 @@ class BitmapInput():
 
          typedef RGBQUAD FAR* LPRGBQUAD
          *'''
-         if dibdumper.bmpInfoHeader_biBitCount == 1:
-            numberOfColors = 2
-         elif dibdumper.bmpInfoHeader_biBitCount == 2:
-            numberOfColors = 4
-         elif dibdumper.bmpInfoHeader_biBitCount == 4:
-            numberOfColors = 16
-         elif dibdumper.bmpInfoHeader_biBitCount == 8:
-            numberOfColors = 256
-         else:
-            numberOfColors = 0
-
-         print("Color Depth = " + str(dibdumper.bmpInfoHeader_biBitCount) + "," +
-            str(numberOfColors)
-         )
+         
          '''*
          * biClrUsed -  Specifies the number of color indexes in the color table that are actually used by the bitmap.
          *     If this value is zero, the bitmap uses the maximum number of colors corresponding to the value of the biBitCount member for the compression mode specified by biCompression.
@@ -442,262 +422,36 @@ class BitmapInput():
          *     If biBitCount equals 16 or 32, the optimal color palette starts immediately following the three DWORD masks.
          *     If the bitmap is a packed bitmap (a bitmap in which the bitmap array immediately follows the BITMAPINFO header and is referenced by a single pointer), the biClrUsed member must be either zero or the actual size of the color table.
          *'''
-         if dibdumper.bmpInfoHeader_biClrUsed > 0:
-            numberOfColors = dibdumper.bmpInfoHeader_biClrUsed
                
-         for i in range(numberOfColors): # Read in the color table (or not if numberOfColors is zero)
-            rgbQuad_rgbBlue      = struct.unpack(">B", fstream.read(1))[0] # lowest byte in the color
-            rgbQuad_rgbGreen     = struct.unpack(">B", fstream.read(1))[0]
-            rgbQuad_rgbRed       = struct.unpack(">B", fstream.read(1))[0] # highest byte in the color
-            rgbQuad_rgbReserved  = struct.unpack(">B", fstream.read(1))[0]
 
-            # Build the color from the RGB values. Since we declared the rgbQuad values to be int, we can shift and then OR the values
-            # to build up the color. Since we are reading one byte at a time, there are no "endian" issues.
-
-            colorPallet[i] = (rgbQuad_rgbRed << 16) | (rgbQuad_rgbGreen << 8) | rgbQuad_rgbBlue
-            # System.out.printf("DEBUG: Color Table = %d, %06X\n", i, colorPallet[i])
-            # for (i = 0 i < numberOfColors ++i)
-
-            '''*
-            * Now for the fun part. We need to read in the rest of the bit map, but how we interpret the values depends on the color depth.
-            *
-            * numberOfColors = 2:   Each bit is a pel, so there are 8 pels per byte. The Color Table has only two values for "black" and "white"
-            * numberOfColors = 4:   Each pair of bits is a pel, so there are 4 pels per byte. The Color Table has only four values
-            * numberOfColors = 16  Each nibble (4 bits) is a pel, so there are 2 pels per byte. The Color Table has 16 entries.
-            * numberOfColors = 256 Each byte is a pel and the value maps into the 256 byte Color Table.
-            *
-            * Any other value is read in as "true" color.
-            *
-            * The BMP image is stored from bottom to top, meaning that the first scan line is the last scan line in the image.
-            *
-            * The rest is the bitmap. Use the height and width information to read it in. And as I mentioned before....
-            * In the 32-bit format, each pixel in the image is represented by a series of four bytes of RGB stored as xBRG,
-            * where the 'x' is an unused byte. For ALL image types each scan line is padded to an even 4-byte boundary.
-            *
-            *'''
+         '''*
+         * Now for the fun part. We need to read in the rest of the bit map, but how we interpret the values depends on the color depth.
+         *
+         * numberOfColors = 2:   Each bit is a pel, so there are 8 pels per byte. The Color Table has only two values for "black" and "white"
+         * numberOfColors = 4:   Each pair of bits is a pel, so there are 4 pels per byte. The Color Table has only four values
+         * numberOfColors = 16  Each nibble (4 bits) is a pel, so there are 2 pels per byte. The Color Table has 16 entries.
+         * numberOfColors = 256 Each byte is a pel and the value maps into the 256 byte Color Table.
+         *
+         * Any other value is read in as "true" color.
+         *
+         * The BMP image is stored from bottom to top, meaning that the first scan line is the last scan line in the image.
+         *
+         * The rest is the bitmap. Use the height and width information to read it in. And as I mentioned before....
+         * In the 32-bit format, each pixel in the image is represented by a series of four bytes of RGB stored as xBRG,
+         * where the 'x' is an unused byte. For ALL image types each scan line is padded to an even 4-byte boundary.
+         *
+         *'''
          dibdumper.imageArray = np.zeros((dibdumper.bmpInfoHeader_biHeight, dibdumper.bmpInfoHeader_biWidth), np.int64) # Create the array for the pels
          '''*
          * I use the same loop structure for each case for clarity so you can see the similarities and differences.
          * The outer loop is over the rows (in reverse), the inner loop over the columns. 
          *'''
-         if dibdumper.bmpInfoHeader_biBitCount == 1: # each bit is a color, so there are 8 pels per byte.  Works
-            '''*
-            * Each byte read in is 8 columns, so we need to break them out. We also have to deal with the case
-            * where the image width is not an integer multiple of 8, in which case we will
-            * have bits from part of the remaining byte. Each color is 1 bit which is masked with 0x01.
-            * The screen ordering of the pels is High-Bit to Low-Bit, so the most significant element is first in the array of pels.
-            *'''
-            iBytesPerRow = dibdumper.bmpInfoHeader_biWidth // 8
-            iTrailingBits = dibdumper.bmpInfoHeader_biWidth % 8
-
-            iDeadBytes = iBytesPerRow
-            if iTrailingBits > 0:
-               iDeadBytes += 1
-               
-            iDeadBytes = (4 - iDeadBytes % 4) % 4
-
-            for row in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
-               if dibdumper.topDownDIB:
-                  i = row 
-               else:
-                  i = dibdumper.bmpInfoHeader_biHeight - 1 - row
-
-               for j in range(iBytesPerRow):
-                  iByteVal = struct.unpack(">B", fstream.read(1))[0]
-
-                  for k in range(8):     # Get 8 pels from the one byte
-                     iColumn = j * 8 + k
-                     pel = colorPallet[(iByteVal >> (7 - k)) & 0x01]
-                     dibdumper.imageArray[i][iColumn] = pel
-               if iTrailingBits > 0: # pick up the trailing bits for images that are not mod 8 columns wide
-                  iByteVal = struct.unpack(">B", fstream.read(1))[0]
-
-                  for k in range(iTrailingBits):
-                     iColumn = iBytesPerRow * 8 + k
-                     pel = colorPallet[(iByteVal >> (7 - k)) & 0x01]
-                     dibdumper.imageArray[i][iColumn] = pel
-               for j in range(iDeadBytes):
-                  struct.unpack(">B", fstream.read(1))[0] # Now read in the "dead bytes" to pad to a 4 byte boundary
-
-         elif dibdumper.bmpInfoHeader_biBitCount == 2: # 4 colors, Each byte is 4 pels (2 bits each),  Should work, not tested.
-            '''*
-            * Each byte read in is 4 columns, so we need to break them out. We also have to deal with the case
-            * where the image width is not an integer multiple of 4, in which case we will
-            * have from 2 to 6 bits of the remaining byte. Each color is 2 bits which is masked with 0x03.
-            * The screen ordering of the pels is High-Half-Nibble to Low-Half-Nibble, so the most significant element is first in the array of pels.
-            *'''
-            iBytesPerRow = dibdumper.bmpInfoHeader_biWidth // 4
-            iTrailingBits = dibdumper.bmpInfoHeader_biWidth % 4 # 0, 1, 2 or 3
-
-            iDeadBytes = iBytesPerRow
-            if iTrailingBits > 0:
-               iDeadBytes += 1
-            iDeadBytes = (4 - iDeadBytes % 4) % 4
-
-            for row in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
-               if dibdumper.topDownDIB:
-                  i = row
-               else:
-                  i = dibdumper.bmpInfoHeader_biHeight - 1 - row
-
-               for j in range(iBytesPerRow):
-                  iByteVal = struct.unpack(">B", fstream.read(1))[0]
-
-                  for k in range(4): # Get 4 pels from one byte
-                     iColumn = j * 4 + k
-                     pel = colorPallet[(iByteVal >> ((3 - k) * 2)) & 0x03] # shift 2 bits at a time and reverse order
-                     dibdumper.imageArray[i][iColumn] = pel
-
-               if iTrailingBits > 0: # pick up the trailing nibble for images that are not mod 2 columns wide
-                  iByteVal = struct.unpack(">B", fstream.read(1))[0]
-
-                  for k in range(iTrailingBits):
-                     iColumn = iBytesPerRow * 4 + k  
-                     pel = colorPallet[(iByteVal >> ((3 - k) * 2)) & 0x03]
-                     dibdumper.imageArray[i][iColumn] = pel
-
-               for j in range(iDeadBytes):
-                  struct.unpack(">B", fstream.read(1))[0] # Now read in the "dead bytes" to pad to a 4 byte boundary
-
-         elif dibdumper.bmpInfoHeader_biBitCount == 4: # 16 colors, Each byte is two pels. Works
-            '''*
-            * Each byte read in is 2 columns, so we need to break them out. We also have to deal with the case
-            * where the image width is not an integer multiple of 2, in which case we will
-            * have one nibble from part of the remaining byte. We then read in the dead bytes so that each
-            * scan line is a multiple of 4 bytes. Each color is a nibble (4 bits) which is masked with 0x0F.
-            * The screen ordering of the pels is High-Nibble Low-Nibble, so the most significant element is first in the array of pels.
-            *'''
-            iPelsPerRow   = dibdumper.bmpInfoHeader_biWidth
-            iBytesPerRow  = iPelsPerRow // 2
-            iTrailingBits = iPelsPerRow % 2  # Will either be 0 or 1
-
-            iDeadBytes = iBytesPerRow
-            if iTrailingBits > 0:
-                  iDeadBytes += 1
-            iDeadBytes = (4 - iDeadBytes % 4) % 4
-
-            for row in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
-               if dibdumper.topDownDIB:
-                  i = row
-               else:
-                  i = dibdumper.bmpInfoHeader_biHeight - 1 - row
-
-               for j in range(iBytesPerRow):
-                  iByteVal = struct.unpack(">B", fstream.read(1))[0]
-
-                  for k in range(2): # Two pels per byte
-                     iColumn = j * 2 + k          # 1 - k  is needed to have High, Low nibble ordering for the image.
-                     pel = colorPallet[(iByteVal >> ((1 - k) * 4)) & 0x0F] # shift 4 bits at a time
-                     dibdumper.imageArray[i][iColumn] = pel
-
-               if iTrailingBits > 0: # pick up the trailing nibble for images that are not mod 2 columns wide
-                  iByteVal = struct.unpack(">B", fstream.read(1))[0]
-
-                  iColumn = iBytesPerRow * 2
-                  pel = colorPallet[(iByteVal >> 4) & 0x0F] # The High nibble is the last remaining pel
-                  dibdumper.imageArray[i][iColumn] = pel
-
-               for j in range(iDeadBytes):
-                  struct.unpack(">B", fstream.read(1))[0] # Now read in the "dead bytes" to pad to a 4 byte boundary
-                  # for (i = bmpInfoHeader_biHeight - 1 i >= 0 --i)
+         for row in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
          
-         elif dibdumper.bmpInfoHeader_biBitCount == 8: # 1 byte, 1 pel, Works
-            '''*
-            * Each byte read in is 1 column. We then read in the dead bytes so that each scan line is a multiple of 4 bytes.
-            *'''
-            iPelsPerRow = dibdumper.bmpInfoHeader_biWidth
-            iDeadBytes = (4 - iPelsPerRow % 4) % 4
-            for row in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
-               if (dibdumper.topDownDIB):
-                  i = row 
-               else:
-                  i = dibdumper.bmpInfoHeader_biHeight - 1 - row
-
-               for j in range(iPelsPerRow):      # j is now just the column counter
-                  iByteVal = struct.unpack(">B", fstream.read(1))[0]
-                  pel = colorPallet[iByteVal]
-                  dibdumper.imageArray[i][j] = pel
-
-               for j in range (iDeadBytes):
-                  struct.unpack(">B", fstream.read(1))[0] # Now read in the "dead bytes" to pad to a 4 byte boundary
+            for j in range(dibdumper.bmpInfoHeader_biWidth):
+               pel = [int(val) for val in fstream.readline().split()][0]
+               dibdumper.imageArray[row][j] = pel
          
-         elif dibdumper.bmpInfoHeader_biBitCount == 16: # Not likely to work (format is not internally consistent), not tested.
-            '''*
-            * Each two bytes read in is 1 column. Each color is 5 bits in the 2 byte word value, so we shift 5 bits and then mask them
-            * off with 0x1F which is %11111 in binary. We then read in the dead bytes so that each scan line is a multiple of 4 bytes.
-            *'''
-            iPelsPerRow = dibdumper.bmpInfoHeader_biWidth
-            iDeadBytes = (4 - iPelsPerRow % 4) % 4
-            for row in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
-               if (dibdumper.topDownDIB):
-                  i = row
-               else:
-                  i = dibdumper.bmpInfoHeader_biHeight - 1 - row
-
-               for j in range(iPelsPerRow):   # j is now just the column counter
-                  pel = struct.unpack("<H", fstream.read(2))[0] # Need to deal with little endian values
-                  rgbQuad_rgbBlue      =  pel        & 0x1F
-                  rgbQuad_rgbGreen     = (pel >> 5)  & 0x1F   
-                  rgbQuad_rgbRed       = (pel >> 10) & 0x1F
-                  pel = (rgbQuad_rgbRed << 16) | (rgbQuad_rgbGreen << 8) | rgbQuad_rgbBlue
-                  dibdumper.imageArray[i][j] = pel
-
-               for j in range(iDeadBytes):
-                  struct.unpack(">B", fstream.read(1))[0] # Now read in the "dead bytes" to pad to a 4 byte boundary
-               # for (i = bmpInfoHeader_biHeight - 1 i >= 0 --i)
-
-         elif dibdumper.bmpInfoHeader_biBitCount == 24: # Works
-            '''*
-            * Each three bytes read in is 1 column. Each scan line is padded to by a multiple of 4 bytes. The disk image has only 3 however.
-            *'''
-            #print("Case 24")
-            iPelsPerRow = dibdumper.bmpInfoHeader_biWidth
-            iDeadBytes = (4 - (iPelsPerRow * 3) % 4) % 4
-
-            for row in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
-               if (dibdumper.topDownDIB):
-                  i = row
-               else:
-                  i = dibdumper.bmpInfoHeader_biHeight - 1 - row
-
-               for j in range(iPelsPerRow):      # j is now just the column counter
-                  rgbQuad_rgbBlue      = struct.unpack(">B", fstream.read(1))[0]
-                  rgbQuad_rgbGreen     = struct.unpack(">B", fstream.read(1))[0]
-                  rgbQuad_rgbRed       = struct.unpack(">B", fstream.read(1))[0]
-                  pel = (rgbQuad_rgbRed << 16) | (rgbQuad_rgbGreen << 8) | rgbQuad_rgbBlue
-                  dibdumper.imageArray[i][j] = pel
-
-               for j in range(iDeadBytes):
-                  struct.unpack(">B", fstream.read(1))[0] # Now read in the "dead bytes" to pad to a 4 byte boundary
-            
-         elif dibdumper.bmpInfoHeader_biBitCount == 32: # Works
-            '''*
-            * Each four bytes read in is 1 column. The number of bytes per line will always be a multiple of 4, so there are no dead bytes.
-            *'''
-            #print("Case 32")
-            iPelsPerRow = dibdumper.bmpInfoHeader_biWidth
-            for row in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
-               if (dibdumper.topDownDIB):
-                  i = row
-               else:
-                  i = dibdumper.bmpInfoHeader_biHeight - 1 - row
-
-               for j in range(iPelsPerRow):       # j is now just the column counter
-                  rgbQuad_rgbBlue      = struct.unpack(">B", fstream.read(1))[0]
-                  #print(rgbQuad_rgbBlue)
-                  rgbQuad_rgbGreen     = struct.unpack(">B", fstream.read(1))[0]
-                  #print(rgbQuad_rgbGreen)
-                  rgbQuad_rgbRed       = struct.unpack(">B", fstream.read(1))[0]
-                  #print(rgbQuad_rgbRed)
-                  rgbQuad_rgbReserved  = struct.unpack(">B", fstream.read(1))[0]
-                  #print(rgbQuad_rgbReserved)
-                  pel =  (rgbQuad_rgbReserved << 24) |(rgbQuad_rgbRed << 16) | (rgbQuad_rgbGreen << 8) | rgbQuad_rgbBlue
-                  #print(pel)
-                  dibdumper.imageArray[i][j] = pel
-                  #print("Good")
-
-         else: # Oops
-            print("This error should not occur - 1!\n")
 
             # switch (bmpInfoHeader_biBitCount)
          fstream.close()
@@ -708,13 +462,6 @@ class BitmapInput():
       '''*
       * Console dump of image bytes in HEX if the image is smaller than 33 x 33
       *'''
-
-      if ((dibdumper.bmpInfoHeader_biWidth < 33) and (dibdumper.bmpInfoHeader_biHeight < 33)):
-         iBytesPerRow = dibdumper.bmpInfoHeader_biWidth
-         for i in range(dibdumper.bmpInfoHeader_biHeight): # read over the rows
-            for j in range(iBytesPerRow):         # j is now just the column counter
-               print(hex(dibdumper.imageArray[i][j]), end = '\t')
-            print("\n", end = '')
 
       '''*
       * Now write out the true color bitmap to a disk file. This is here mostly to be sure we did it all correctly.
@@ -731,20 +478,39 @@ class BitmapInput():
          dibdumper.bmpInfoHeader_biClrUsed = 0         # Zero for true color
          dibdumper.bmpInfoHeader_biClrImportant = 0    # Zero for true color
 
-         fstream = open(outFileName, 'w')
+         fstream = open(outFileName, 'wb')
             # BITMAPFILEHEADER
+         fstream.write(struct.pack("<H", dibdumper.bmpFileHeader_bfType))      # WORD
+         fstream.write(struct.pack("<i", dibdumper.bmpFileHeader_bfSize))          # DWORD
+         fstream.write(struct.pack("<H", dibdumper.bmpFileHeader_bfReserved1)) # WORD
+         fstream.write(struct.pack("<H", dibdumper.bmpFileHeader_bfReserved2)) # WORD
+         fstream.write(struct.pack("<i", dibdumper.bmpFileHeader_bfOffBits))       # DWORD
+         # BITMAPINFOHEADER
+         fstream.write(struct.pack("<i", dibdumper.bmpInfoHeader_biSize))          # DWORD
+         fstream.write(struct.pack("<i", dibdumper.bmpInfoHeader_biWidth))         # LONG
+         fstream.write(struct.pack("<i", dibdumper.bmpInfoHeader_biHeight))        # LONG
+         fstream.write(struct.pack("<H", dibdumper.bmpInfoHeader_biPlanes))    # WORD
+         fstream.write(struct.pack("<H", dibdumper.bmpInfoHeader_biBitCount))  # WORD
+         fstream.write(struct.pack("<i", dibdumper.bmpInfoHeader_biCompression))   # DWORD
+         fstream.write(struct.pack("<i", dibdumper.bmpInfoHeader_biSizeImage))     # DWORD
+         fstream.write(struct.pack("<i", dibdumper.bmpInfoHeader_biXPelsPerMeter)) # LONG
+         fstream.write(struct.pack("<i", dibdumper.bmpInfoHeader_biYPelsPerMeter)) # LONG
+         fstream.write(struct.pack("<i", dibdumper.bmpInfoHeader_biClrUsed))     # DWORD
+         fstream.write(struct.pack("<i", dibdumper.bmpInfoHeader_biClrImportant))  # DWORD
+
          # there is no color table for this true color image, so write out the pels
 
-         for i in range(dibdumper.bmpInfoHeader_biHeight):    # write over the rows (in the usual inverted format)
+         for i in range(dibdumper.bmpInfoHeader_biHeight - 1, -1, -1):    # write over the rows (in the usual inverted format)
             for j in range(dibdumper.bmpInfoHeader_biWidth): # and the columns
                pel = dibdumper.imageArray[i][j]
-               rgbQuad_rgbBlue  = pel & 0x00FF
-               rgbQuad_rgbGreen = (pel >> 8)  & 0x00FF
-               rgbQuad_rgbRed   = (pel >> 16) & 0x00FF
-               pel = dibdumper.colorToGrayscale(pel)
-               fstream.write(str(pel) + '\n') # lowest byte in the color
-               # highest byte in the color
-               # Now write out the "dead bytes" to pad to a 4 byte boundary
+               rgbQuad_rgbBlue  = pel 
+               rgbQuad_rgbGreen = (pel)  
+               rgbQuad_rgbRed   = (pel)
+               fstream.write(struct.pack(">B", rgbQuad_rgbBlue)) # lowest byte in the color
+               fstream.write(struct.pack(">B", rgbQuad_rgbGreen))
+               fstream.write(struct.pack(">B", rgbQuad_rgbRed))  # highest byte in the color
+            for j in range(iDeadBytes):
+               fstream.write(struct.pack(">B", 0)) # Now write out the "dead bytes" to pad to a 4 byte boundary
                
             # for (i = bmpInfoHeader_biHeight - 1 i >= 0 --i)
 
@@ -753,7 +519,7 @@ class BitmapInput():
       except Exception as err:
          print("File output error" + str(err))
       # public static void main
-   # public class BitmapInput
+   # public class BitmapOutput
 
 if (__name__ == "__main__"):
-   BitmapInput.main()
+   BitmapOutput.main()
