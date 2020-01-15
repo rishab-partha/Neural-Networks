@@ -168,6 +168,7 @@ class NeuralNet:
       print(self.outputs[inputIndex])
       print("Printing expected output:")
       print(self.expectedOutputs[inputIndex])
+      self.printOutputs(inputIndex)
       #End of function printNet
    
    def printOutputs(self, inputIndex):
@@ -475,7 +476,7 @@ class NeuralNet:
          print("Error Threshold = " + str(self.errorThreshold))
 
       fileWeights = open(self.wWeights, 'w+')
-      
+      fileWeights.write(str(numIters) + '\n')
       for n in range(len(self.layerSizes) - 1):
          for k in range(self.layerSizes[n]):
             for j in range(self.layerSizes[n + 1]):

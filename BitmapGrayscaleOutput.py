@@ -142,6 +142,10 @@ class BitmapOutput():
       self.bmpInfoHeader_biClrImportant = None  # DWORD
       # The true color pels
       self.imageArray = None
+      # The center of mass
+      self.xCenterOfMass = 0
+      self.yCenterOfMass = 0
+      self.pelSum = 0
 
       # if bmpInfoHeader_biHeight is negative then the image is a top down DIB. This flag is used to
       # identify it as such. Note that when the image is saved, it will be written out in the usual
@@ -451,9 +455,18 @@ class BitmapOutput():
             for j in range(dibdumper.bmpInfoHeader_biWidth):
                pel = [int(val) for val in fstream.readline().split()][0]
                dibdumper.imageArray[row][j] = pel
-         
+               dibdumper.xCenterOfMass += j*pel
+               dibdumper.yCenterOfMass += row*pel
+               dibdumper.pelSum += pel
 
             # switch (bmpInfoHeader_biBitCount)
+         dibdumper.xCenterOfMass /= dibdumper.pelSum
+         dibdumper.yCenterOfMass /= dibdumper.pelSum
+         dibdumper.xCenterOfMass -= (dibdumper.bmpInfoHeader_biWidth/2.0)
+         dibdumper.yCenterOfMass -= (dibdumper.bmpInfoHeader_biHeight/2.0)
+         dibdumper.xCenterOfMass = round(dibdumper.xCenterOfMass)
+         dibdumper.yCenterOfMass = round(dibdumper.yCenterOfMass)
+
          fstream.close()
 
       except Exception as err:
@@ -502,7 +515,12 @@ class BitmapOutput():
 
          for i in range(dibdumper.bmpInfoHeader_biHeight - 1, -1, -1):    # write over the rows (in the usual inverted format)
             for j in range(dibdumper.bmpInfoHeader_biWidth): # and the columns
-               pel = dibdumper.imageArray[i][j]
+               newi = i + dibdumper.yCenterOfMass
+               newj = j + dibdumper.xCenterOfMass
+               if newi < dibdumper.bmpInfoHeader_biHeight and newi >= 0 and newj >= 0 and newj < dibdumper.bmpInfoHeader_biWidth:
+                  pel = dibdumper.imageArray[newi][newj]
+               else:
+                  pel = 0
                rgbQuad_rgbBlue  = pel 
                rgbQuad_rgbGreen = (pel)  
                rgbQuad_rgbRed   = (pel)

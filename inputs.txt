@@ -1,9 +1,11 @@
-4
-input1.txt
+5
+1finger.txt
 output1.txt
-input2.txt
+2finger.txt
 output2.txt
-input3.txt
+3finger.txt
 output3.txt
-input4.txt
+4finger.txt
 output4.txt
+5finger.txt
+output5.txt
