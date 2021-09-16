@@ -1,3 +1,6 @@
+# Plagiarism Notice
+Do NOT copy any code from this repository. By using this code, you will be held liable for accusations of academic plagiarism.
+
 # Files
 ## config.txt
 Contains:  
